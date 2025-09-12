@@ -1,13 +1,26 @@
-FROM maven:3.9.11-eclipse-temurin-17-alpine as build
-RUN apk add git
-RUN git clone https://github.com/spring-projects/spring-petclinic.git  && \
-    cd spring-petclinic && \
-    mvn package
+# ---- Build stage ----
+FROM maven:3.9.11-eclipse-temurin-17-alpine AS build
 
-FROM openjdk:25-ea-17-jdk as run 
+# Install git
+RUN apk add --no-cache git
+
+# Clone the repo and build the project
+RUN git clone https://github.com/spring-projects/spring-petclinic.git /app
+WORKDIR /app
+RUN mvn package -DskipTests
+
+# ---- Runtime stage ----
+FROM eclipse-temurin:17-jre-alpine AS run
+
+# Create non-root user
 RUN adduser -D -h /usr/share/demo -s /bin/bash testuser
 USER testuser
-WORKDIR /user/share/demo
-COPY --from=build /target/*.jar .
-EXPOSE 8080/tcp
-CMD ["java", "-jar", "*.jar"]    
+WORKDIR /usr/share/demo
+
+# Copy jar from build stage (renaming to app.jar)
+COPY --from=build /app/target/*.jar app.jar
+
+EXPOSE 8080
+
+# Run the application
+CMD ["java", "-jar", "app.jar"]
