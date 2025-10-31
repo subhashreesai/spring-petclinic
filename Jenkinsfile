@@ -2,8 +2,9 @@ pipeline {
     agent {
         label 'JDKJAVASPC'
     }
+
     triggers {
-        pollSCM('* * * * *')
+        pollSCM('* * * * *') // check git every minute
     }
 
     stages {
@@ -41,8 +42,12 @@ pipeline {
                             }
                         ]
                     }"""
-                    server.upload(spec: uploadSpec)
-                    server.publishBuildInfo()
+
+                    // ✅ Create Build Info object and upload
+                    def buildInfo = server.upload(spec: uploadSpec)
+                    
+                    // ✅ Publish Build Info to JFrog
+                    server.publishBuildInfo(buildInfo)
                 }
             }
         }
